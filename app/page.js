@@ -185,7 +185,7 @@ export default function Home() {
     }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
       alert("กรุณากรอกชื่อและเบอร์โทรศัพท์");
@@ -198,25 +198,45 @@ export default function Home() {
 
     setSubmitStatus({ submitting: true, success: false, message: "" });
 
-    // Mock API call
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const resData = await response.json();
+
+      if (response.ok && resData.success) {
+        setSubmitStatus({
+          submitting: false,
+          success: true,
+          message: "ขอบคุณสำหรับการลงทะเบียน! เจ้าหน้าที่ฝ่ายขายของเราจะติดต่อกลับหาท่านภายใน 24 ชั่วโมง"
+        });
+        // Clear form
+        setFormData({
+          name: "",
+          phone: "",
+          houseType: "",
+          budget: "",
+          day: "",
+          time: "",
+          notes: "",
+          agree: false
+        });
+      } else {
+        throw new Error(resData.error || "เกิดข้อผิดพลาดในการส่งข้อมูล");
+      }
+    } catch (error) {
       setSubmitStatus({
         submitting: false,
-        success: true,
-        message: "ขอบคุณสำหรับการลงทะเบียน! เจ้าหน้าที่ฝ่ายขายของเราจะติดต่อกลับหาท่านภายใน 24 ชั่วโมง"
+        success: false,
+        message: error.message || "เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง"
       });
-      // Clear form
-      setFormData({
-        name: "",
-        phone: "",
-        houseType: "",
-        budget: "",
-        day: "",
-        time: "",
-        notes: "",
-        agree: false
-      });
-    }, 1500);
+      alert(error.message || "เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
+    }
   };
 
   const scrollToSection = (id) => {
