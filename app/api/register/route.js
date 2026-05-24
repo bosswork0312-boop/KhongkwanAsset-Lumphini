@@ -25,10 +25,40 @@ export async function POST(request) {
 ------------------------
 กรุณาติดต่อกลับลูกค้าโดยด่วนครับ`;
 
+    // 1. บันทึกข้อมูลเข้า Google Sheets หากตั้งค่า URL ไว้ (ทำงานแบบทนทานความผิดพลาด)
+    const googleSheetsUrl = process.env.GOOGLE_SHEETS_URL;
+    if (googleSheetsUrl) {
+      try {
+        const sheetResponse = await fetch(googleSheetsUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            phone,
+            houseType,
+            budget,
+            day,
+            time,
+            notes,
+          }),
+        });
+
+        if (!sheetResponse.ok) {
+          console.error("❌ Google Sheets Response Error:", await sheetResponse.text());
+        } else {
+          console.log("✅ บันทึกข้อมูลลง Google Sheet สำเร็จ");
+        }
+      } catch (sheetError) {
+        console.error("❌ Failed to post to Google Sheets:", sheetError);
+      }
+    }
+
     const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
     const userId = process.env.LINE_USER_ID;
 
-    // ถ้ายังไม่ได้ตั้งค่าตัวแปรสภาพแวดล้อมจริง
+    // ถ้ายังไม่ได้ตั้งค่าตัวแปรสภาพแวดล้อม LINE จริง
     if (!channelAccessToken || !userId) {
       console.error("❌ LINE_CHANNEL_ACCESS_TOKEN หรือ LINE_USER_ID ยังไม่ได้ตั้งค่าในเซิร์ฟเวอร์!");
       // คืนสถานะความสำเร็จหลอกหน้าบ้านเพื่อให้ไม่สะดุด แต่เตือนในส่วน Log
@@ -38,7 +68,7 @@ export async function POST(request) {
       });
     }
 
-    // ส่งข้อมูลแบบ JSON ไปยัง LINE Messaging API ทางการ (Push Message)
+    // 2. ส่งข้อมูลแบบ JSON ไปยัง LINE Messaging API ทางการ (Push Message)
     const response = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
       headers: {
