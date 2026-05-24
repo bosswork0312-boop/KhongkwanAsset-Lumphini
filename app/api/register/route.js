@@ -12,9 +12,8 @@ export async function POST(request) {
       );
     }
 
-    // ข้อความที่จะส่งไปยังกลุ่ม/แชต LINE
-    const message = `
-🔔 มีผู้ลงทะเบียนใหม่!
+    // ข้อความที่จะส่งเตือนเข้ากลุ่มแชตหรือห้องแชต LINE ของเอเจนต์
+    const textContent = `🔔 มีผู้ลงทะเบียนใหม่!
 ------------------------
 👤 ชื่อผู้ติดต่อ: ${name}
 📞 เบอร์โทรศัพท์: ${phone}
@@ -24,42 +23,50 @@ export async function POST(request) {
 ⏰ เวลาที่สะดวก: ${time || "ไม่ได้ระบุ"}
 📝 หมายเหตุเพิ่มเติม: ${notes || "ไม่มีข้อมูลเพิ่มเติม"}
 ------------------------
-สแกนข้อมูลและติดต่อกลับลูกค้าโดยด่วนครับ`;
+กรุณาติดต่อกลับลูกค้าโดยด่วนครับ`;
 
-    // ดึง LINE Token จากตัวแปรสภาพแวดล้อมเพื่อความปลอดภัยสูงสุด
-    const token = process.env.LINE_NOTIFY_TOKEN;
+    const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    const userId = process.env.LINE_USER_ID;
 
-    if (!token) {
-      console.error("❌ LINE_NOTIFY_TOKEN ไม่ได้ถูกตั้งค่าในระบบ!");
-      // ส่งคืนความสำเร็จหลอกๆ ให้กับฝั่งหน้าบ้านเพื่อไม่ให้ลูกค้าหน้าเว็บสะดุด
-      // แต่แจ้งข้อผิดพลาดในฝั่ง Server
+    // ถ้ายังไม่ได้ตั้งค่าตัวแปรสภาพแวดล้อมจริง
+    if (!channelAccessToken || !userId) {
+      console.error("❌ LINE_CHANNEL_ACCESS_TOKEN หรือ LINE_USER_ID ยังไม่ได้ตั้งค่าในเซิร์ฟเวอร์!");
+      // คืนสถานะความสำเร็จหลอกหน้าบ้านเพื่อให้ไม่สะดุด แต่เตือนในส่วน Log
       return NextResponse.json({
         success: true,
-        warning: "ระบบยังไม่ได้รับการตั้งค่า LINE Token จริง",
+        warning: "ระบบยังไม่ได้รับการตั้งค่ารหัสผ่าน LINE API จริงในเซิร์ฟเวอร์",
       });
     }
 
-    // ยิง API ไปยังเซิร์ฟเวอร์ LINE Notify
-    const response = await fetch("https://notify-api.line.me/api/notify", {
+    // ส่งข้อมูลแบบ JSON ไปยัง LINE Messaging API ทางการ (Push Message)
+    const response = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${channelAccessToken}`,
       },
-      body: new URLSearchParams({ message }).toString(),
+      body: JSON.stringify({
+        to: userId,
+        messages: [
+          {
+            type: "text",
+            text: textContent,
+          },
+        ],
+      }),
     });
 
     if (!response.ok) {
       const responseData = await response.text();
-      console.error("❌ LINE Notify API Error:", responseData);
-      throw new Error("ไม่สามารถส่งแจ้งเตือนเข้าไลน์ได้");
+      console.error("❌ LINE Messaging API Error Details:", responseData);
+      throw new Error("ไม่สามารถส่งแจ้งเตือนเข้าแชต LINE ผ่าน Messaging API ได้");
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ API Register Route Error:", error);
+    console.error("❌ API Register Route (LINE OA) Error:", error);
     return NextResponse.json(
-      { success: false, error: "เกิดข้อผิดพลาดในการบันทึกข้อมูลและส่งแจ้งเตือน" },
+      { success: false, error: "เกิดข้อผิดพลาดทางเทคนิคในการประมวลผลระบบ" },
       { status: 500 }
     );
   }
