@@ -210,6 +210,12 @@ export default function Home() {
       const resData = await response.json();
 
       if (response.ok && resData.success) {
+        // Trigger Google Ads Conversion Event
+        if (typeof window !== "undefined" && window.gtag) {
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-341632224/aS2KCKamsbgcEODJ86IB'
+          });
+        }
         setSubmitStatus({
           submitting: false,
           success: true,

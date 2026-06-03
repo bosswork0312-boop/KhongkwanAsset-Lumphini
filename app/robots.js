@@ -4,6 +4,6 @@ export default function robots() {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://www.lpnrangsitby.co.th/sitemap.xml",
+    sitemap: "https://www.lpnrangsitbykk.in.th/sitemap.xml",
   };
 }
