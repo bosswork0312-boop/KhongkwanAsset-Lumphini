@@ -213,7 +213,9 @@ export default function Home() {
         // Trigger Google Ads Conversion Event
         if (typeof window !== "undefined" && window.gtag) {
           window.gtag('event', 'conversion', {
-            'send_to': 'AW-341632224/aS2KCKamsbgcEODJ86IB'
+            'send_to': 'AW-18225003484/NLXlCPaNtrscENz3rfJD',
+            'value': 1.0,
+            'currency': 'THB'
           });
         }
         setSubmitStatus({
